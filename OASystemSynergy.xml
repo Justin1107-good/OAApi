@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OASystemSynergy</name>
+    </assembly>
+    <members>
+        <member name="M:OASystemSynergy.Log4Net.MyExceptionFilterAttribute.#ctor(Microsoft.Extensions.Logging.ILogger{OASystemSynergy.Log4Net.MyExceptionFilterAttribute})">
+            <summary>
+            通过构造函数的方式，依赖注入日志对象
+            </summary>
+            <param name="logger"></param>
+        </member>
+    </members>
+</doc>
