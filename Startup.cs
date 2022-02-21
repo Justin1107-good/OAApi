@@ -160,7 +160,7 @@ namespace OASystemSynergy
             services.AddScoped<IAuthorizationHandler, PermissionRequirementHandler>();
             // 如前所述，要求可包含多个处理程序。如果为授权层的同一要求向 DI 系统注册多个处理程序，有一个成功就足够了。
 
-            services.AddScoped<IUserFactory, UserFactory>();
+            services.AddScoped<IUserFactory<tb_User>, UserFactory<tb_User>>();
          
 
 
