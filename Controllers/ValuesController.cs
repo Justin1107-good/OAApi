@@ -1,0 +1,22 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace OASystemSynergy.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ValuesController : ControllerBase
+    {
+        [Route("test")]
+        [HttpGet]
+        public string Test()
+        {
+            return "OK";
+
+        }
+    }
+}
