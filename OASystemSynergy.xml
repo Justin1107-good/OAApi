@@ -4,6 +4,16 @@
         <name>OASystemSynergy</name>
     </assembly>
     <members>
+        <member name="F:OASystemSynergy.Controllers.User.UsersController.CreateTemplateSql">
+            <summary>
+            本地认证评估表建表SQL
+            </summary>
+        </member>
+        <member name="F:OASystemSynergy.Controllers.User.UsersController.UpdateSql">
+            <summary>
+            本地认证评估更新SQL 这里采用的merge语言更新语句 你也可以使用 sql update 语句
+            </summary>
+        </member>
         <member name="M:OASystemSynergy.Log4Net.MyExceptionFilterAttribute.#ctor(Microsoft.Extensions.Logging.ILogger{OASystemSynergy.Log4Net.MyExceptionFilterAttribute})">
             <summary>
             通过构造函数的方式，依赖注入日志对象

@@ -21,6 +21,7 @@ using SynergyCore.user;
 using SynergyEntity;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -66,7 +67,7 @@ namespace OASystemSynergy
             {
                 options.AddPolicy("any", builder =>
                 {
-                    builder.WithOrigins("", "")//指定域
+                    builder.WithOrigins("https://localhost:44345/", "https://localhost:5001/", "https://localhost:44308/")//指定域
                                                // builder
                                                // .AllowAnyOrigin() //允许任何来源的主机访问 
                     .AllowAnyMethod()
@@ -99,6 +100,12 @@ namespace OASystemSynergy
                     }
                 });
 
+                //获取应用程序所在目录（绝对，不受工作目录影响，建议采用此方法获取路径）
+                var basePath = Path.GetDirectoryName(typeof(Program).Assembly.Location);
+                //配置的xml文件名
+                var xmlPath = Path.Combine(basePath, "OASystemSynergy.xml");
+                //默认的第二个参数是false,对方法的注释
+                c.IncludeXmlComments(xmlPath);
                 #region 加锁  
                 //利用Swagger为我们提供的接口，在AddSwaggerGen服务中，添加保护api资源的描述。
                 var openAPISecourtiy = new OpenApiSecurityScheme
@@ -160,7 +167,7 @@ namespace OASystemSynergy
             services.AddScoped<IAuthorizationHandler, PermissionRequirementHandler>();
             // 如前所述，要求可包含多个处理程序。如果为授权层的同一要求向 DI 系统注册多个处理程序，有一个成功就足够了。
 
-            services.AddScoped<IUserFactory<tb_User>, UserFactory<tb_User>>();
+            services.AddScoped<IUserFactory, UserFactory>();
          
 
 
