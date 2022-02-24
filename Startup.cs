@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 using OASystemSynergy.Log4Net;
 using Swashbuckle.AspNetCore.Filters;
@@ -30,6 +32,7 @@ namespace OASystemSynergy
 {
     public class Startup
     {
+        
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -65,15 +68,15 @@ namespace OASystemSynergy
 
             services.AddCors(options =>
             {
-                options.AddPolicy("any", builder =>
-                {
-                    builder.WithOrigins("https://localhost:44345/", "https://localhost:5001/", "https://localhost:44308/")//指定域
-                                               // builder
-                                               // .AllowAnyOrigin() //允许任何来源的主机访问 
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();//指定处理cookie 
-                });
+                options.AddPolicy("any",
+                     builder =>
+                     {
+                         builder.WithOrigins("https://localhost:44345/",
+                                             "https://localhost:6001")
+                         .AllowAnyHeader()
+                         .AllowAnyMethod();
+                         //.AllowCredentials();  
+                     });  
             });
             #endregion
 
@@ -196,7 +199,15 @@ namespace OASystemSynergy
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                // endpoints.MapGet("/echo",
+                //     context=>context.Response.WriteAsync("echo"));
+                endpoints.MapControllers()
+                .RequireCors("any");
+
+                // endpoints.MapGet("/echo2",
+                //context => context.Response.WriteAsync("echo2"));
+
+                // endpoints.MapRazorPages();
             });
 
             sqlDbContext.Database.EnsureCreated();

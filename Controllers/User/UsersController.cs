@@ -18,8 +18,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using MySqlCommand = MySqlConnector.MySqlCommand;
-using MySqlConnection = MySqlConnector.MySqlConnection;
+using Newtonsoft.Json;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -35,16 +34,13 @@ namespace OASystemSynergy.Controllers.User
         /// <summary>
         /// 本地认证评估表建表SQL
         /// </summary>
-        private const string CreateTemplateSql = @"[id] [int] NOT NULL,[NameU] [nvarchar](50) NOT NULL";
-
+        private const string CreateTemplateSql = @"id int,NameU varchar(50),PWD varchar(50)";
+        //create table UserInfo11 (id int,NameU varchar(50),PWD varchar(50));
         /// <summary>
         /// 本地认证评估更新SQL 这里采用的merge语言更新语句 你也可以使用 sql update 语句
         /// </summary>
-        private const string UpdateSql = @"Merge into UserInfo11 AS T 
-Using #TmpTable AS S 
-ON T.id = S.id
-WHEN MATCHED 
-THEN UPDATE SET T.[NameU]=S.[NameU];";
+        private const string UpdateSql = "update UserInfo11, TmpTable set UserInfo11.NameU=TmpTable.NameU where UserInfo11.id=TmpTable.id;";
+        //@"/*Merge into UserInfo11 AS T Using TmpTable AS S ON T.id = S.id WHEN MATCHED THEN UPDATE SET T.NameU=S.NameU;*/";
         private readonly IUserFactory _userFactory;
         public UsersController(IUserFactory userFactory)
         {
@@ -54,9 +50,12 @@ THEN UPDATE SET T.[NameU]=S.[NameU];";
 
         [Route("userList")]
         [HttpGet]
+        //[EnableCors("any")]
         public List<tb_User> Get()
         {
-            return _userFactory.UserList();
+            var list = _userFactory.UserList();
+            // string json = JsonConvert.SerializeObject(list);
+            return list;
         }
 
         // GET api/<UsersController>/5
@@ -100,6 +99,20 @@ THEN UPDATE SET T.[NameU]=S.[NameU];";
                 return 0;
             }
         }
+        [Route("MultAdd")]
+        [HttpPost]
+        public int MultAddUser(List<tb_User> users)
+        {
+            int h = _userFactory.Add(users);
+            if (h > 0)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
 
         // PUT api/<UsersController>/5
         [HttpPut("{id}")]
@@ -108,7 +121,7 @@ THEN UPDATE SET T.[NameU]=S.[NameU];";
         }
 
         // DELETE api/<UsersController>/5
-        [HttpDelete("{id}")]
+        [HttpDelete("delete")]
         public int Delete(int id)
         {
             int h = _userFactory.Remove(id);
@@ -121,12 +134,18 @@ THEN UPDATE SET T.[NameU]=S.[NameU];";
                 return 0;
             }
         }
+        [HttpDelete("multDelete")]
+        public int MultDelect(string idStr)
+        {
+            string[] id = idStr.Split(',');
+            return _userFactory.Remove(id);
+        }
         [Route("UserUpdate")]
         [HttpPost]
-        public bool UodateList(List<UserInfo11> user)
+        public bool UodateList(List<tb_User> user)
         {
-
-            MqlBulkUpdateData<UserInfo11>(user, CreateTemplateSql, UpdateSql);
+            int h = _userFactory.GetUpdate(user);
+            //MqlBulkUpdateData<UserInfo11>(user, CreateTemplateSql, UpdateSql);
             return true;
         }
 
@@ -311,39 +330,89 @@ THEN UPDATE SET T.[NameU]=S.[NameU];";
         }
 
         #region mysql
-        public static void MqlBulkUpdateData<T>(List<T> list, string crateTemplateSql, string updateSql)
+        public static async Task MqlBulkUpdateData<T>(List<T> list, string crateTemplateSql, string updateSql)
         {
             var dataTable = ConvertToDataTable(list);
 
-            using (var conn = new MySqlConnection("Server=192.168.220.140;Stmt=;Database=oasystemdb; User=root;Password=123456;"))
+            using (var conn = new MySqlConnector.MySqlConnection("server = 127.0.0.1; uid = root; pwd = root; database = testdb;AllowLoadLocalInfile=true "))
             {
-                using (var command = new MySqlCommand("", conn))
+
+                using (var command = new MySqlConnector.MySqlCommand("", conn))
                 {
                     try
-                    {                                                                                     
+                    {
                         conn.Open();
                         //数据库并创建一个临时表来保存数据表的数据
-                        command.CommandText = $"  CREATE TABLE #TmpTable ({crateTemplateSql})";
+                        command.CommandText = $"CREATE TABLE TmpTable ({CreateTemplateSql});";
                         command.ExecuteNonQuery();
 
-                        MySqlBulkCopy bulkCopy = new MySqlBulkCopy(conn);
-                        //使用SqlBulkCopy 加载数据到临时表中
+                        #region mysqlbulkcopy  
+                        //MySqlBulkCopy bulkCopy = new MySqlBulkCopy(conn);
+                        ////使用SqlBulkCopy 加载数据到临时表中                        
 
+                        ////foreach (DataColumn dcPrepped in dataTable.Columns)
+                        ////{
+                        ////    bulkCopy.ColumnMappings.Add(dcPrepped.ColumnName);
+                        ////}
+                        //bulkCopy.DestinationTableName = "TmpTable";
+                        //var result = bulkCopy.WriteToServer(dataTable);
+                        //
+                        //
+                        // open the connection
+                        //using var connection = new MySqlConnection("...;AllowLoadLocalInfile=True");
+                        //await connection.OpenAsync();
+
+                        // bulk copy the data
+                        var bulkCopy = new MySqlBulkCopy(conn);
+
+                        MySqlBulkCopyColumnMapping cmp = null;
+                        foreach (DataColumn dcPrepped in dataTable.Columns)
+                        {
+                            cmp = new MySqlBulkCopyColumnMapping
+                            {
+                                DestinationColumn = dcPrepped.ColumnName,
+                                Expression = dcPrepped.ColumnName
+                            };
+
+                            //bulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping
+                            //{
+
+                            //    DestinationColumn = dcPrepped.ColumnName,
+
+
+
+                            //});
+
+                        }
+                        bulkCopy.ColumnMappings.Add(cmp);
+                        bulkCopy.DestinationTableName = "TmpTable";
+                        await bulkCopy.WriteToServerAsync(dataTable);
+                        // 执行Command命令 使用临时表的数据去更新目标表中的数据  然后删除临时表
+                        command.CommandTimeout = 300;
+                        command.CommandText = updateSql;
+                        command.ExecuteNonQuery();
+
+                        #endregion
+
+                        #region MySqlBulkLoader    
+                        //MySqlBulkLoader bl = new MySqlBulkLoader(conn);
+                        //bl.Local = true;
+                        //bl.TableName = "TmpTable";
                         //foreach (DataColumn dcPrepped in dataTable.Columns)
                         //{
-                        //    bulkCopy.ColumnMappings.Add(dcPrepped.ColumnName);
+                        //    bl.Columns.Add(dcPrepped.ColumnName);
                         //}
-                        bulkCopy.DestinationTableName = "#TmpTable";
-                        var result = bulkCopy.WriteToServer(dataTable);
+                        //bl.NumberOfLinesToSkip = 3;
+                        //int result = bl.Columns.Count;
 
-                        
-                        if (result.Warnings.Count != 0)
-                        {
-                            // 执行Command命令 使用临时表的数据去更新目标表中的数据  然后删除临时表
-                            command.CommandTimeout = 300;
-                            command.CommandText = updateSql;
-                            command.ExecuteNonQuery();
-                        }
+                        //if (result != 0)
+                        //{
+                        //    // 执行Command命令 使用临时表的数据去更新目标表中的数据  然后删除临时表
+                        //    command.CommandTimeout = 300;
+                        //    command.CommandText = updateSql;
+                        //    command.ExecuteNonQuery();
+                        //}
+                        #endregion
                     }
                     finally
                     {
@@ -352,7 +421,7 @@ THEN UPDATE SET T.[NameU]=S.[NameU];";
                 }
             }
         }
-        #endregion
+        #endregion                     
 
 
 
